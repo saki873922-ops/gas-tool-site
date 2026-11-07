@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>請求書自動生成フォーム</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script>
+        function validateAndGenerate() {
+            const customerName = document.getElementById('customerName').value;
+            const invoiceNumber = document.getElementById('invoiceNumber').value;
+            const billingDate = document.getElementById('billingDate').value;
+            const paymentDueDate = document.getElementById('paymentDueDate').value;
+            const productName = document.getElementById('productName').value;
+            const quantity = Number(document.getElementById('quantity').value);
+            const unitPrice = Number(document.getElementById('unitPrice').value);
+            const taxRate = Number(document.getElementById('taxRate').value);
+            const remarks = document.getElementById('remarks').value;
+
+            // バリデーション
+            if (!customerName || !invoiceNumber || !billingDate || !paymentDueDate || !productName || !quantity || !unitPrice) {
+                alert('必須項目をすべて入力してください。');
+                return;
+            }
+
+            // 削減金額計算(例: 假の計算)
+            const totalAmount = (quantity * unitPrice) * (1 + taxRate / 100);
+
+            // GASコード生成
+            const gasCode = `function generateInvoice(data) {\n  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(\"請求書\");\n  const lastRow = sheet.getLastRow() + 1;\n  const customerName = data.customerName;\n  const invoiceNumber = data.invoiceNumber;\n  const billingDate = data.billingDate;\n  const paymentDueDate = data.paymentDueDate;\n  const productName = data.productName;\n  const quantity = data.quantity;\n  const unitPrice = data.unitPrice;\n  const taxRate = data.taxRate;\n  const taxAmount = (quantity * unitPrice) * (taxRate / 100);\n  const totalAmount = (quantity * unitPrice) + taxAmount;\n  sheet.getRange(lastRow, 1).setValue(invoiceNumber);\n  sheet.getRange(lastRow, 2).setValue(customerName);\n  sheet.getRange(lastRow, 3).setValue(new Date(billingDate));\n  sheet.getRange(lastRow, 4).setValue(new Date(paymentDueDate));\n  sheet.getRange(lastRow, 5).setValue(productName);\n  sheet.getRange(lastRow, 6).setValue(quantity);\n  sheet.getRange(lastRow, 7).setValue(unitPrice);\n  sheet.getRange(lastRow, 8).setValue(taxRate);\n  sheet.getRange(lastRow, 9).setValue(taxAmount);\n  sheet.getRange(lastRow, 10).setValue(totalAmount);\n  sheet.getRange(lastRow, 11).setValue(data.remarks);\n  return \"請求書が正常に生成されました。\";\n}`;
+
+            document.getElementById('generatedCode').value = gasCode;
+            alert(`削減金額は: ¥${totalAmount.toFixed(2)}です。`);
+        }
+
+        function copyToClipboard() {
+            const codeTextArea = document.getElementById('generatedCode');
+            codeTextArea.select();
+            document.execCommand('copy');
+            alert('GASコードをコピーしました。');
+        }
+    </script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-4xl mx-auto p-8 bg-white rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-4">請求書自動生成フォーム</h1>
+        <form id="invoiceForm">
+            <div class="mb-4">
+                <label for="customerName" class="block text-sm font-medium text-gray-700">顧客名</label>
+                <input type="text" id="customerName" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+            </div>
+            <div class="mb-4">
+                <label for="invoiceNumber" class="block text-sm font-medium text-gray-700">請求書番号</label>
+                <input type="text" id="invoiceNumber" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+            </div>
+            <div class="mb-4">
+                <label for="billingDate" class="block text-sm font-medium text-gray-700">請求日</label>
+                <input type="date" id="billingDate" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+            </div>
+            <div class="mb-4">
+                <label for="paymentDueDate" class="block text-sm font-medium text-gray-700">支払期日</label>
+                <input type="date" id="paymentDueDate" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+            </div>
+            <div class="mb-4">
+                <label for="productName" class="block text-sm font-medium text-gray-700">商品名</label>
+                <input type="text" id="productName" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+            </div>
+            <div class="mb-4">
+                <label for="quantity" class="block text-sm font-medium text-gray-700">数量</label>
+                <input type="number" id="quantity" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+            </div>
+            <div class="mb-4">
+                <label for="unitPrice" class="block text-sm font-medium text-gray-700">単価</label>
+                <input type="number" id="unitPrice" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+            </div>
+            <div class="mb-4">
+                <label for="taxRate" class="block text-sm font-medium text-gray-700">税率</label>
+                <select id="taxRate" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+                    <option value="0">0%</option>
+                    <option value="8">8%</option>
+                    <option value="10" selected>10%</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="remarks" class="block text-sm font-medium text-gray-700">備考</label>
+                <textarea id="remarks" class="mt-1 block w-full border border-gray-300 rounded-md p-2" rows="3"></textarea>
+            </div>
+            <button type="button" class="w-full bg-blue-500 text-white font-bold py-2 rounded-md" onclick="validateAndGenerate()">請求書生成</button>
+        </form>
+        <div class="mt-6">
+            <h2 class="text-xl font-bold">生成されたGASコード</h2>
+            <textarea id="generatedCode" class="mt-1 block w-full border border-gray-300 rounded-md p-2 h-64" readonly></textarea>
+            <button type="button" class="mt-2 w-full bg-green-500 text-white font-bold py-2 rounded-md" onclick="copyToClipboard()">コードをコピー</button>
+        </div>
+        <div class="mt-6">
+            <a href="https://example.com" class="text-blue-600 underline">決済/問い合わせリンク</a>
+        </div>
+    </div>
+</body>
+</html>
